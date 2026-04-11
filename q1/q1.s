@@ -1,21 +1,21 @@
-# q1.s - BST implementation in RISC-V assembly
-# struct Node: val(int)@0, left(ptr)@8, right(ptr)@16, sizeof=24
+
+# struct Node layout: val(int)@0, left(ptr)@8, right(ptr)@16, sizeof=24
 
 .section .text
 
-# struct Node* newnode
-# a0 = val (int)
-# returns: a0 = pointer to new Node
+# struct Node* make_node(int val)
+# a0 = val
+# returns: a0 = pointer to new node
 
-.globl newnode
-newnode:
+.globl make_node
+make_node:
     addi  sp, sp, -16
     sd    ra, 8(sp)
     sd    s0, 0(sp)
 
-    mv    s0, a0           # val
+    mv    s0, a0           
 
-    li    a0, 24           # size of(node) = 24 
+    li    a0, 24
     call  malloc
 
     sw    s0, 0(a0)        # node->val = val
@@ -27,31 +27,32 @@ newnode:
     addi  sp, sp, 16
     ret
 
-# struct Node* insert(struct Node* root int val)
+
+# struct Node* insert(struct Node* root, int val)
+# a0 = root
+# a1 = val
 # returns: a0 = root
 
 .globl insert
 insert:
     addi  sp, sp, -32
     sd    ra, 24(sp)
-    sd    s0, 16(sp)       # root
-    sd    s1, 8(sp)        # val 
+    sd    s0, 16(sp)
+    sd    s1, 8(sp)
 
     mv    s0, a0           # s0 = root
     mv    s1, a1           # s1 = val
 
-    # if root == NULL, newnode(val) and return
     bne   s0, x0, insert_notnull
     mv    a0, s1
-    call  newnode
+    call  make_node        # fixed: newnode
     j     insert_done
 
 insert_notnull:
     lw    t0, 0(s0)        # t0 = root->val
-    # if val < root->val: insert into left subtree
     bge   s1, t0, insert_right
 
-    ld    a0, 8(s0)        # a0 = root->left
+    ld    a0, 8(s0)
     mv    a1, s1
     call  insert
     sd    a0, 8(s0)        # root->left = result
@@ -59,10 +60,9 @@ insert_notnull:
     j     insert_done
 
 insert_right:
-    # if val > root->val: insert into right subtree
     ble   s1, t0, insert_equal
 
-    ld    a0, 16(s0)       # a0 = root->right
+    ld    a0, 16(s0)
     mv    a1, s1
     call  insert
     sd    a0, 16(s0)       # root->right = result
@@ -70,8 +70,7 @@ insert_right:
     j     insert_done
 
 insert_equal:
-    # val == root->val: already exists, just return root
-    mv    a0, s0
+    mv    a0, s0           #return root 
 
 insert_done:
     ld    ra, 24(sp)
@@ -81,70 +80,69 @@ insert_done:
     ret
 
 # struct Node* get(struct Node* root, int val)
-# a0 = root
-# a1 = val
-# returns: a0 =pointer to node
+# a0 = root, a1 = val
+# returns: a0 = pointer to node 
 
 .globl get
 get:
-    
-    beq   a0, x0, get_done   # root == NULL, return NULL
+    beq   a0, x0, get_done    # NULL → return NULL
 
-    lw    t0, 0(a0)           # t0 = root->val
-    beq   a1, t0, get_done    # val = a0, return a0 
+    lw    t0, 0(a0)            # t0 = root->val
+    beq   a1, t0, get_done     # return a0
 
     blt   a1, t0, get_left
-    # go right
-    ld    a0, 16(a0)
+    ld    a0, 16(a0)           # go right
     j     get
 
 get_left:
-    ld    a0, 8(a0)
+    ld    a0, 8(a0)            # go left
     j     get
 
 get_done:
     ret
 
-# int atmost(int val, struct Node* root)
+
+# int getAtMost(int val, struct Node* root)
 # a0 = val
 # a1 = root
-# returns: a0 = greatest value <= val
+# returns: a0 = greatest value <= val 
 
-.globl atmost
-atmost:
+.globl getAtMost
+getAtMost:
     addi  sp, sp, -32
     sd    ra, 24(sp)
-    sd    s0, 16(sp)       # s0 = val
-    sd    s1, 8(sp)        # s1 = root
-    sd    s2, 0(sp)        # s2 = ans
+    sd    s0, 16(sp)
+    sd    s1, 8(sp)
+    sd    s2, 0(sp)
 
-    mv    s0, a0           # val
-    mv    s1, a1           # root
-    li    s2, -1           # best = -1
+    mv    s0, a0           # s0 = val
+    mv    s1, a1           # s1 = current node
+    li    s2, -1           # s2 = best answer
 
-atmost_loop:
-    beq   s1, x0, atmost_done   # root == NULL 
+getAtMost_loop:
+    beq   s1, x0, getAtMost_done
 
-    lw    t0, 0(s1)        # t0 = root->val
+    lw    t0, 0(s1)        # t0 = node->val
 
-    blt   t0, s0, atmost_lt     # root->val <val
-    beq   t0, s0, atmost_eq     # root->val == val
+    blt   t0, s0, getAtMost_lt
+    beq   t0, s0, getAtMost_eq
 
+    # go left 
+    ld    s1, 8(s1)
+    j     getAtMost_loop
 
-    ld    s1, 8(s1) #root->val > val (go left)
-    j     atmost_loop
-
-atmost_lt:
-
-    mv    s2, t0 # go right 
-    ld    s1, 16(s1)
-    j     atmost_loop
-
-atmost_eq:
+getAtMost_lt:
+    # go right
     mv    s2, t0
-    j     atmost_done
+    ld    s1, 16(s1)
+    j     getAtMost_loop
 
-atmost_done:
+getAtMost_eq:
+    # answer 
+    mv    s2, t0
+    j     getAtMost_done
+
+getAtMost_done:
     mv    a0, s2
     ld    ra, 24(sp)
     ld    s0, 16(sp)
