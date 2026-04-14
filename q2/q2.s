@@ -1,5 +1,3 @@
-# q2.s - next greater element (stack)
-
 #registers: 
 # s0 = n (no of elements)
 #s1 = base address of arr[]
@@ -12,11 +10,15 @@
 .globl main
 
 main:
-    addi sp, sp, -32
-    sd ra, 24(sp)
-    sd s0, 16(sp)
-    sd s1, 8(sp)
-    sd s2, 0(sp)
+    addi sp, sp, -64
+    sd ra, 56(sp)
+    sd s0, 48(sp)
+    sd s1, 40(sp)
+    sd s2, 32(sp)
+    sd s3, 24(sp)
+    sd s4, 16(sp)
+    sd s5, 8(sp)
+    sd s6, 0(sp)
 
     addi s0, a0, -1      # n
     mv s6, a1            # argv
@@ -39,21 +41,21 @@ main:
     li s4, -1            # top = -1
 
     # parse
-    li t0, 0
+    li s5, 0
 
 parse:
-    bge t0, s0, done_parse #if i>= n, parding done 
-    addi t1, t0, 1 #t1 = i+1 
+    bge s5, s0, done_parse #if i>= n, parding done 
+    addi t1, s5, 1 #t1 = i+1 
     slli t1, t1, 3 #t1 = (i+1)* 8 (byte offset)
     add t1, s6, t1 # t1 = &argv[i+1]
     ld a0, 0(t1) #a0 = argv[i+1]
     call atoi #a0 = int value of the string 
 
-    slli t2, t0, 3 #t2 = i*8
+    slli t2, s5, 3 #t2 = i*8
     add t2, s1, t2 # t2 = &arr[i]
     sd a0, 0(t2) #arr[i] = atoi(argv[i+1])
 
-    addi t0, t0, 1 # i++ 
+    addi s5, s5, 1 # i++ 
     j parse
 
 done_parse:
@@ -148,11 +150,15 @@ cont:
     j print
 
 done:
-    ld ra, 24(sp)
-    ld s0, 16(sp)
-    ld s1, 8(sp)
-    ld s2, 0(sp)
-    addi sp, sp, 32
+    ld ra, 56(sp)
+    ld s0, 48(sp)
+    ld s1, 40(sp)
+    ld s2, 32(sp)
+    ld s3, 24(sp)
+    ld s4, 16(sp)
+    ld s5, 8(sp)
+    ld s6, 0(sp)
+    addi sp, sp, 64
     li a0, 0 
     ret
 
@@ -161,31 +167,34 @@ done:
 print_int:
     addi sp, sp, -32
     sd ra, 24(sp)
-    mv t0, a0 #t0 = number to print 
-    blt t0, x0, neg
+    sd s1, 16(sp)
+    sd s2, 8(sp)
+    sd s3, 0(sp)
+    mv s1, a0 #s1 = number to print 
+    blt s1, x0, neg
 pos:
     li t1, 10 #divisor 
-    li t2, 0 #t2 = digit count 
+    li s2, 0 #s2 = digit count 
     addi sp, sp, -32
-    mv t3, sp #t3 = pointer into digit buffer 
+    mv s3, sp #s3 = pointer into digit buffer 
 loop1:
-    beq t0, x0, print1 #no more digits 
-    rem t4, t0, t1 #t4 = t0 % 10 
-    div t0, t0, t1 #t0 = t0/10 
+    beq s1, x0, print1 #no more digits 
+    rem t4, s1, t1 #t4 = s1 % 10 
+    div s1, s1, t1 #s1 = s1/10 
     addi t4, t4, '0' #convert digit to ascii 
-    sb t4, 0(t3) #store in buffer 
-    addi t3, t3, 1 # move buffer pointer 
-    addi t2, t2, 1 #digit count++ 
+    sb t4, 0(s3) #store in buffer 
+    addi s3, s3, 1 # move buffer pointer 
+    addi s2, s2, 1 #digit count++ 
     j loop1
 print1:
-    beq t2, x0, zero_case #if no digits were extracted, number was 0 
-    addi t3, t3, -1 
+    beq s2, x0, zero_case #if no digits were extracted, number was 0 
+    addi s3, s3, -1 
 loop2:
-    lb a0, 0(t3) #load digit 
+    lb a0, 0(s3) #load digit 
     call putchar # print 
-    addi t3, t3, -1
-    addi t2, t2, -1
-    bnez t2, loop2 #repeat till all digits are printed 
+    addi s3, s3, -1
+    addi s2, s2, -1
+    bnez s2, loop2 #repeat till all digits are printed 
     j done_print
 zero_case:
     li a0, '0'
@@ -196,10 +205,13 @@ done_print:
 neg:
     li a0, '-'
     call putchar #print minus sign
-    neg t0, t0 #make positive 
-    mv a0, t0
+    neg s1, s1 #make positive 
+    mv a0, s1
     call print_int #recursive to print +ve val 
 end_print:
     ld ra, 24(sp)
+    ld s1, 16(sp)
+    ld s2, 8(sp)
+    ld s3, 0(sp)
     addi sp, sp, 32
     ret
