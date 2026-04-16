@@ -11,12 +11,12 @@ int main() {
         // construct lib name 
         sprintf(lib, "./lib%s.so", op);
         // load the lib 
-        void *lib = dlopen(lib, RTLD_LAZY);
+        void *hand = dlopen(lib, RTLD_LAZY);
         // get pointer to operation 
-        int (*func)(int, int) = dlsym(lib, op);
+        int (*func)(int, int) = dlsym(hand, op);
         printf("%d\n", func(a, b));
         // unload the library
-        dlclose(lib);
+        dlclose(hand);
     }
     return 0;
 }
