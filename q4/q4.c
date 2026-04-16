@@ -3,20 +3,16 @@
 #include <dlfcn.h>
 
 int main() {
-    char op[8];      // stores operation name 
-    int a, b;        // operands
+    char op[8];
+    int a, b;
 
     while (scanf("%7s %d %d", op, &a, &b) == 3) {
-        char lib[32];
-        // construct lib name 
-        sprintf(lib, "./lib%s.so", op);
-        // load the lib 
-        void *hand = dlopen(lib, RTLD_LAZY);
-        // get pointer to operation 
-        int (*func)(int, int) = dlsym(hand, op);
+        char libname[32];
+        sprintf(libname, "./lib%s.so", op);
+        void *handle = dlopen(libname, RTLD_LAZY);
+        int (*func)(int, int) = dlsym(handle, op);
         printf("%d\n", func(a, b));
-        // unload the library
-        dlclose(hand);
+        dlclose(handle);
     }
     return 0;
 }
